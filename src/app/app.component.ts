@@ -1,7 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HeaderComponent } from './components/header/header.component';
 import { TodoCardComponent } from './components/todo-card/todo-card.component';
+import { SchoolData, SchoolService } from './services/school.service';
+import { Observable, filter, from, map, of, switchMap, zip } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -10,6 +12,81 @@ import { TodoCardComponent } from './components/todo-card/todo-card.component';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.scss']
 })
-export class AppComponent {
+export class AppComponent implements OnInit{
   title = 'todo-list';
+
+  public students: Array<SchoolData> = [];
+  public teachers: Array<SchoolData> = [];
+  private zipSchoolResponse$ = zip(
+    this.getStudents(),
+    this.getTeacher()
+  );
+
+  private ages = of(20,30,40,50,60,70)
+
+  private peopleDatas = from([
+    {name: 'marcos', age: 20, profession: 'Software Developer'},
+    {name: 'Júlia', age: 30, profession: 'UX Design'},
+    {name: 'Jorge', age: 25, profession: 'Scrum Master'},
+  ]);
+
+  private studentUserId = '2';
+
+  constructor(
+    private schoolService: SchoolService
+  ){}
+
+  ngOnInit(): void {
+    //this.getSchoolDatas(); exemplo do operador zip e of
+    //this.getMultipliedAges(); exemplo map e of
+   // this.getPeopleProfessions();// exemplo from e map
+   //this.handleFindStudentsById(); exemplo switchMap
+  }
+
+  public handleFindStudentsById(): void{
+    this.getStudents().pipe(
+      switchMap(students => this.findStudentsById(students, this.studentUserId))
+    ).subscribe({
+      next: response => console.log('retorno estudante: ', response)
+    })
+  }
+
+  public findStudentsById(students: Array<SchoolData>, userId: string): Observable<(SchoolData | undefined)[]>{
+    return of([students.find(student => student.id === userId)]);
+  }
+
+  public getPeopleProfessions(): void{
+    this.peopleDatas
+    .pipe(
+      filter(people => people.profession === 'Software Developer'),
+      map( people => people.name)
+    )
+    .subscribe({ next: response => console.log('Nome: ', response)})
+  }
+
+  public getMultipliedAges(): void{
+    this.ages
+    .pipe(map((age) => age * age))
+    .subscribe({
+      next: (response) => console.log('Idade multiplicada', response)
+    })
+  }
+
+  public getSchoolDatas(): void{
+    this.zipSchoolResponse$.subscribe({
+      next: (response) => {
+        console.log('students', response[0]);
+        console.log('teachers', response[1]);
+      },
+    });
+  }
+
+  private getStudents(): Observable<Array<SchoolData>>{
+    return this.schoolService.getStudents();
+  }
+
+  private getTeacher(): Observable<Array<SchoolData>>{
+    return this.schoolService.getTeacher();
+  }
+
 }

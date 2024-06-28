@@ -1,9 +1,11 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, OnInit, Output, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HeaderComponent } from './components/header/header.component';
 import { TodoCardComponent } from './components/todo-card/todo-card.component';
 import { SchoolData, SchoolService } from './services/school.service';
 import { Observable, filter, from, map, of, switchMap, zip } from 'rxjs';
+import { TodoSignalsService } from './services/todo-signals.service';
+import { Todo } from './models/model/Todo.model';
 
 @Component({
   selector: 'app-root',
@@ -14,26 +16,28 @@ import { Observable, filter, from, map, of, switchMap, zip } from 'rxjs';
 })
 export class AppComponent implements OnInit{
   title = 'todo-list';
-
+  @Input() public projectName!: string;
+  @Output() public  outputEvent = new EventEmitter<string>();
+  public todoSignal!: WritableSignal<Array<Todo>>;
   public students: Array<SchoolData> = [];
   public teachers: Array<SchoolData> = [];
   private zipSchoolResponse$ = zip(
     this.getStudents(),
     this.getTeacher()
   );
-
   private ages = of(20,30,40,50,60,70)
-
   private peopleDatas = from([
     {name: 'marcos', age: 20, profession: 'Software Developer'},
     {name: 'Júlia', age: 30, profession: 'UX Design'},
     {name: 'Jorge', age: 25, profession: 'Scrum Master'},
   ]);
-
   private studentUserId = '2';
+  public renderTestMessage = false;
+  public isDoned = false;
 
   constructor(
-    private schoolService: SchoolService
+    private schoolService: SchoolService,
+    private todoSignalsService: TodoSignalsService
   ){}
 
   ngOnInit(): void {
@@ -41,6 +45,23 @@ export class AppComponent implements OnInit{
     //this.getMultipliedAges(); exemplo map e of
    // this.getPeopleProfessions();// exemplo from e map
    //this.handleFindStudentsById(); exemplo switchMap
+  }
+
+  public handleEmitEvent(): void {
+    this.outputEvent.emit(this.projectName);
+  }
+
+  public handleCreateTodo(todo: Todo): void{
+    if(todo){
+      this.todoSignalsService.updateTodos(todo);
+      this.todoSignal = this.todoSignalsService.todosState;
+    }
+  }
+
+  public handleCheckIsDone(): void{
+    setTimeout(() => {
+      this.isDoned = true;
+    }, 200);
   }
 
   public handleFindStudentsById(): void{
